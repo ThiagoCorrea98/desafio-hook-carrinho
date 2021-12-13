@@ -23,20 +23,47 @@ const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
+    const storagedCart = localStorage.getItem('@RocketShoes:cart'); // vai buscar no localstorage os dados
 
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
+    if (storagedCart) {
+      return JSON.parse(storagedCart); //usando o JSON.parse para transformar em array
+    }
 
     return [];
   });
 
   const addProduct = async (productId: number) => {
     try {
-      // TODO
+      const updatedCart = [...cart];// novo array com os valores de cart
+      const productExists = updatedCart.find(product => product.id === productId); // verificando se o id do produto é o mesmo que o no estoque
+    
+      const stock = await api.get(`/stock/${productId}`); // verifica no estoque
+
+      const stockAmount = stock.data.amount; // pega o valor do estoque 
+      const currentAmount = productExists ? productExists.amount :0; //pega o valor atual e verifica se existe e seta como 0
+      const amount = currentAmount + 1;
+
+      if(amount > stockAmount) {
+        toast.error('Quantidade solicitada fora de estoque');
+        return; // se o valor pedido for maior que o valor de estoque, apresenta a msg 
+      }
+
+      if(productExists) {
+        productExists.amount = amount; // atualiza o valor
+      } else {
+        const product = await api.get(`/products/${productId}`);
+
+        const newProduct = {
+          ...product.data,
+          amount: 1
+        }
+        updatedCart.push(newProduct); //acrescenta 1 se for um produto novo
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart)); // tranformando em strinf
+      }
+
+      setCart(updatedCart);
     } catch {
-      // TODO
+      toast.error('Erro na adição do produto');// mensagem de erro caso não seja possível add um novo produto
     }
   };
 
