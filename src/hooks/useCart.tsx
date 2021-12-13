@@ -69,9 +69,18 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const removeProduct = (productId: number) => {
     try {
-      // TODO
+      const updatedCart = [...cart]// análogo a addProduct
+      const productIndex = updatedCart.findIndex(product => product.id === productId); // utilização do findIndex para dps ser capaz de remover do array
+
+      if(productIndex >= 0){
+        updatedCart.splice(productIndex, 1); // utilização do splice justamente por usar o findIndex
+        setCart(updatedCart);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart)); //análogo ao addProduct
+      } else {
+        throw Error();
+      }
     } catch {
-      // TODO
+      toast.error('Erro na remoção do produto');// mensagem de erro caso não seja possível remover um novo produto
     }
   };
 
@@ -80,9 +89,30 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      // TODO
+      if(amount <= 0) {
+        return; // se a quantidade for nula ou menor já "cai" fora
+      }
+      
+      const stock = await api.get(`/stock/${productId}`)// verifica o estoque product
+      const stockAmount = stock.data.amount; // pega o valor do estoque
+
+      if(amount > stockAmount){
+        toast.error('Quantidade solicitada fora de estoque');
+        return;
+      }
+
+      const updatedCart = [...cart];
+      const productExists = updatedCart.find(product => product.id === productId); 
+
+      if(productExists){
+        productExists.amount = amount;
+        setCart(updatedCart);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart)); //análogo ao addProduct
+      } else {
+        throw Error();
+      }
     } catch {
-      // TODO
+      toast.error('Erro na alteração de quantidade do produto');// mensagem de erro caso não seja possível alterar a quantidade do produto
     }
   };
 
